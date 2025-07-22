@@ -114,3 +114,58 @@ class DP800Controller:
                 f"Unsupported device model '{model}'. "
                 f"Expected one of {self.VALID_DEVICE_MODELS}. Device ID: {device_id}"
             )
+
+    def get_channel_state(self, channel):
+        """Get complete state information for a specific channel.
+
+        Args:
+            channel (int): Channel number (1-3 for DP832A)
+
+        Returns:
+            dict: Channel state with voltage, current, OVP, OCP settings and status
+
+        Raises:
+            DP800Error: If device is not connected or query fails
+        """
+        if not self.instrument:
+            raise DP800Error("Device not connected. Call connect() first.")
+
+        if not 1 <= channel <= 3:
+            raise DP800Error(f"Invalid channel {channel}. Must be 1-3 for DP832A.")
+
+        try:
+            # Query all channel state parameters
+            set_voltage = float(self.instrument.query(f':SOUR{channel}:VOLT?').strip())
+            set_current = float(self.instrument.query(f':SOUR{channel}:CURR?').strip())
+            ovp_value = float(self.instrument.query(f':SOUR{channel}:VOLT:PROT?').strip())
+            ocp_value = float(self.instrument.query(f':SOUR{channel}:CURR:PROT?').strip())
+            ovp_status = self.instrument.query(f':SOUR{channel}:VOLT:PROT:STAT?').strip()
+            ocp_status = self.instrument.query(f':SOUR{channel}:CURR:PROT:STAT?').strip()
+            ovp_enabled = ovp_status.upper() == 'ON'
+            ocp_enabled = ocp_status.upper() == 'ON'
+
+            return {
+                'channel': channel,
+                'set_voltage': set_voltage,
+                'set_current': set_current,
+                'ovp_value': ovp_value,
+                'ocp_value': ocp_value,
+                'ovp_enabled': ovp_enabled,
+                'ocp_enabled': ocp_enabled
+            }
+
+        except (pyvisa.errors.VisaIOError, ValueError) as error_msg:
+            raise DP800Error(
+                f"Failed to query channel {channel} state: {error_msg}"
+            ) from error_msg
+
+    def get_all_channels_state(self):
+        """Get state information for all channels (1-3).
+
+        Returns:
+            list: List of channel state dictionaries
+
+        Raises:
+            DP800Error: If device is not connected or query fails
+        """
+        return [self.get_channel_state(channel) for channel in range(1, 4)]

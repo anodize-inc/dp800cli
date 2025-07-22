@@ -22,6 +22,44 @@ def cmd_id(args):
             controller.disconnect()
 
 
+def cmd_state(args):
+    """Handle the 'state' subcommand."""
+    try:
+        controller = DP800Controller(args.ip, args.port)
+        controller.connect()
+        controller.validate_device_id(controller.get_device_id())
+
+        if args.channel:
+            # Query specific channel
+            state = controller.get_channel_state(args.channel)
+            print_channel_state(state)
+        else:
+            # Query all channels
+            states = controller.get_all_channels_state()
+            for state in states:
+                print_channel_state(state)
+                print()  # Empty line between channels
+
+    except DP800Error as error_msg:
+        print(f"Error: {error_msg}", file=sys.stderr)
+        sys.exit(1)
+    finally:
+        if 'controller' in locals():
+            controller.disconnect()
+
+
+def print_channel_state(state):
+    """Print formatted channel state information."""
+    channel = state['channel']
+    print(f"Channel {channel}:")
+    print(f"  Set Voltage:     {state['set_voltage']:>8.3f} V")
+    print(f"  Set Current:     {state['set_current']:>8.3f} A")
+    print(f"  OVP Value:       {state['ovp_value']:>8.3f} V")
+    print(f"  OVP Enabled:     {state['ovp_enabled']}")
+    print(f"  OCP Value:       {state['ocp_value']:>8.3f} A")
+    print(f"  OCP Enabled:     {state['ocp_enabled']}")
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -47,6 +85,16 @@ def main():
     # ID command
     id_parser = subparsers.add_parser('id', help='Get device identification information')
     id_parser.set_defaults(func=cmd_id)
+
+    # State command
+    state_parser = subparsers.add_parser('state', help='Get channel state information')
+    state_parser.add_argument(
+        '-c', '--channel',
+        type=int,
+        choices=[1, 2, 3],
+        help='Channel number (1-3). If not specified, shows all channels.'
+    )
+    state_parser.set_defaults(func=cmd_state)
 
     # Parse arguments
     args = parser.parse_args()
