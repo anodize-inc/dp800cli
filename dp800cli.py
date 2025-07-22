@@ -121,8 +121,25 @@ def cmd_off(args):
             controller.disconnect()
 
 
+def is_color_enabled(config_color_value):
+    """Check if color is enabled based on configuration value."""
+    if config_color_value is None:
+        return True  # Default to enabled
+
+    # Convert to lowercase string and check for true values
+    color_str = str(config_color_value).lower().strip()
+    return color_str in ['true', '1', 'on']
+
+
 def supports_color():
-    """Check if the terminal supports ANSI color codes."""
+    """Check if the terminal supports ANSI color codes and color is enabled."""
+    # Load config to check color setting
+    config_values = load_config()
+
+    # Check configuration setting first
+    if not is_color_enabled(config_values.get('color')):
+        return False
+
     # Check if stdout is a TTY and TERM is set appropriately
     if not sys.stdout.isatty():
         return False
@@ -181,7 +198,8 @@ def load_config():
     # Default values
     defaults = {
         'ip': '192.168.0.55',
-        'port': '5555'
+        'port': '5555',
+        'color': 'true'
     }
 
     # Search order: local directory, then home directory
@@ -205,9 +223,15 @@ def load_config():
     else:
         device_section = {}
 
+    if config.has_section('display'):
+        display_section = dict(config['display'])
+    else:
+        display_section = {}
+
     return {
         'ip': device_section.get('ip', defaults['ip']),
-        'port': int(device_section.get('port', defaults['port']))
+        'port': int(device_section.get('port', defaults['port'])),
+        'color': display_section.get('color', defaults['color'])
     }
 
 

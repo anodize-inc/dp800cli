@@ -16,3 +16,9 @@ ip = 192.168.0.55
 # Port number for SCPI communication
 # Default: 5555 (standard for Rigol devices)
 port = 5555
+
+[display]
+# Enable color output (true/false, 1/0, on/off - case insensitive)
+# Default: true (colors enabled if terminal supports them)
+# Set to false to disable color output regardless of terminal capabilities
+color = true
