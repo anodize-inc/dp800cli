@@ -66,10 +66,63 @@ def cmd_screenshot(args):
             controller.disconnect()
 
 
+def cmd_on(args):
+    """Handle the 'on' subcommand."""
+    try:
+        controller = DP800Controller(args.ip, args.port)
+        controller.connect()
+        controller.validate_device_id(controller.get_device_id())
+
+        if args.channel == 'all':
+            controller.set_all_outputs_state(True)
+            print("All channels turned ON")
+        else:
+            channel = int(args.channel)
+            controller.set_output_state(channel, True)
+            print(f"Channel {channel} turned ON")
+
+    except DP800Error as error_msg:
+        print(f"Error: {error_msg}", file=sys.stderr)
+        sys.exit(1)
+    except ValueError:
+        print(f"Error: Invalid channel '{args.channel}'. Must be 1-3 or 'all'.", file=sys.stderr)
+        sys.exit(1)
+    finally:
+        if 'controller' in locals():
+            controller.disconnect()
+
+
+def cmd_off(args):
+    """Handle the 'off' subcommand."""
+    try:
+        controller = DP800Controller(args.ip, args.port)
+        controller.connect()
+        controller.validate_device_id(controller.get_device_id())
+
+        if args.channel == 'all':
+            controller.set_all_outputs_state(False)
+            print("All channels turned OFF")
+        else:
+            channel = int(args.channel)
+            controller.set_output_state(channel, False)
+            print(f"Channel {channel} turned OFF")
+
+    except DP800Error as error_msg:
+        print(f"Error: {error_msg}", file=sys.stderr)
+        sys.exit(1)
+    except ValueError:
+        print(f"Error: Invalid channel '{args.channel}'. Must be 1-3 or 'all'.", file=sys.stderr)
+        sys.exit(1)
+    finally:
+        if 'controller' in locals():
+            controller.disconnect()
+
+
 def print_channel_state(state):
     """Print formatted channel state information."""
     channel = state['channel']
     print(f"Channel {channel}:")
+    print(f"  Output Enabled:  {state['output_enabled']}")
     print(f"  Set Voltage:     {state['set_voltage']:>8.3f} V")
     print(f"  Set Current:     {state['set_current']:>8.3f} A")
     print(f"  OVP Value:       {state['ovp_value']:>8.3f} V")
@@ -123,6 +176,22 @@ def main():
         help='Output filename (default: auto-generated with timestamp)'
     )
     screenshot_parser.set_defaults(func=cmd_screenshot)
+
+    # On command
+    on_parser = subparsers.add_parser('on', help='Turn channel output on')
+    on_parser.add_argument(
+        'channel',
+        help='Channel number (1-3) or "all" for all channels'
+    )
+    on_parser.set_defaults(func=cmd_on)
+
+    # Off command
+    off_parser = subparsers.add_parser('off', help='Turn channel output off')
+    off_parser.add_argument(
+        'channel',
+        help='Channel number (1-3) or "all" for all channels'
+    )
+    off_parser.set_defaults(func=cmd_off)
 
     # Parse arguments
     args = parser.parse_args()

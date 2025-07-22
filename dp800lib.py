@@ -145,6 +145,7 @@ class DP800Controller:
             ocp_status = self.instrument.query(f':SOUR{channel}:CURR:PROT:STAT?').strip()
             ovp_enabled = ovp_status.upper() == 'ON'
             ocp_enabled = ocp_status.upper() == 'ON'
+            output_enabled = self.get_output_state(channel)
 
             return {
                 'channel': channel,
@@ -153,7 +154,8 @@ class DP800Controller:
                 'ovp_value': ovp_value,
                 'ocp_value': ocp_value,
                 'ovp_enabled': ovp_enabled,
-                'ocp_enabled': ocp_enabled
+                'ocp_enabled': ocp_enabled,
+                'output_enabled': output_enabled
             }
 
         except (pyvisa.errors.VisaIOError, ValueError) as error_msg:
@@ -218,3 +220,66 @@ class DP800Controller:
 
         except (pyvisa.errors.VisaIOError, IOError, ValueError) as error_msg:
             raise DP800Error(f"Failed to take screenshot: {error_msg}") from error_msg
+
+    def set_output_state(self, channel, state):
+        """Turn a channel output on or off.
+
+        Args:
+            channel (int): Channel number (1-3 for DP832A)
+            state (bool): True to turn on, False to turn off
+
+        Raises:
+            DP800Error: If device is not connected or command fails
+        """
+        if not self.instrument:
+            raise DP800Error("Device not connected. Call connect() first.")
+
+        if not 1 <= channel <= 3:
+            raise DP800Error(f"Invalid channel {channel}. Must be 1-3 for DP832A.")
+
+        try:
+            state_cmd = "ON" if state else "OFF"
+            self.instrument.write(f':OUTP CH{channel},{state_cmd}')
+        except pyvisa.errors.VisaIOError as error_msg:
+            action = "enable" if state else "disable"
+            raise DP800Error(
+                f"Failed to {action} channel {channel} output: {error_msg}"
+            ) from error_msg
+
+    def set_all_outputs_state(self, state):
+        """Turn all channel outputs on or off.
+
+        Args:
+            state (bool): True to turn on, False to turn off
+
+        Raises:
+            DP800Error: If device is not connected or command fails
+        """
+        for channel in range(1, 4):
+            self.set_output_state(channel, state)
+
+    def get_output_state(self, channel):
+        """Get the output state for a specific channel.
+
+        Args:
+            channel (int): Channel number (1-3 for DP832A)
+
+        Returns:
+            bool: True if output is on, False if off
+
+        Raises:
+            DP800Error: If device is not connected or query fails
+        """
+        if not self.instrument:
+            raise DP800Error("Device not connected. Call connect() first.")
+
+        if not 1 <= channel <= 3:
+            raise DP800Error(f"Invalid channel {channel}. Must be 1-3 for DP832A.")
+
+        try:
+            response = self.instrument.query(f':OUTP? CH{channel}').strip()
+            return response.upper() == 'ON'
+        except pyvisa.errors.VisaIOError as error_msg:
+            raise DP800Error(
+                f"Failed to query channel {channel} output state: {error_msg}"
+            ) from error_msg
