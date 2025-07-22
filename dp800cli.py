@@ -136,6 +136,38 @@ def cmd_off(args):
             controller.disconnect()
 
 
+def cmd_set(args):
+    """Handle the 'set' subcommand."""
+    try:
+        controller = DP800Controller(args.ip, args.port)
+        controller.connect()
+        controller.validate_device_id(controller.get_device_id())
+
+        # If no voltage or current specified, show current parameters
+        if args.voltage is None and args.current is None:
+            parameters = controller.get_channel_parameters(args.channel)
+            print(f"Channel {args.channel} Parameters: {parameters}")
+        else:
+            # Set the specified parameters
+            controller.set_channel_parameters(args.channel, args.voltage, args.current)
+
+            # Build message showing what was set
+            set_items = []
+            if args.voltage is not None:
+                set_items.append(f"voltage to {args.voltage} V")
+            if args.current is not None:
+                set_items.append(f"current to {args.current} A")
+
+            print(f"Channel {args.channel}: Set {' and '.join(set_items)}")
+
+    except DP800Error as error_msg:
+        print(f"Error: {error_msg}", file=sys.stderr)
+        sys.exit(1)
+    finally:
+        if 'controller' in locals():
+            controller.disconnect()
+
+
 def is_color_enabled(config_color_value):
     """Check if color is enabled based on configuration value."""
     if config_color_value is None:
@@ -321,6 +353,26 @@ def main():
         help='Channel number (1-3) or "all" for all channels'
     )
     off_parser.set_defaults(func=cmd_off)
+
+    # Set command
+    set_parser = subparsers.add_parser('set', help='Set channel voltage and/or current')
+    set_parser.add_argument(
+        'channel',
+        type=int,
+        choices=[1, 2, 3],
+        help='Channel number (1-3)'
+    )
+    set_parser.add_argument(
+        '-v', '--voltage',
+        type=float,
+        help='Voltage to set in volts'
+    )
+    set_parser.add_argument(
+        '-c', '--current',
+        type=float,
+        help='Current to set in amps'
+    )
+    set_parser.set_defaults(func=cmd_set)
 
     # Parse arguments
     args = parser.parse_args()

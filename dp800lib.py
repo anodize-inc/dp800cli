@@ -283,3 +283,61 @@ class DP800Controller:
             raise DP800Error(
                 f"Failed to query channel {channel} output state: {error_msg}"
             ) from error_msg
+
+    def set_channel_parameters(self, channel, voltage=None, current=None):
+        """Set channel voltage and/or current using :SOURce commands.
+
+        Args:
+            channel (int): Channel number (1-3 for DP832A)
+            voltage (float, optional): Voltage to set in volts
+            current (float, optional): Current to set in amps
+
+        Raises:
+            DP800Error: If device is not connected or command fails
+        """
+        if not self.instrument:
+            raise DP800Error("Device not connected. Call connect() first.")
+
+        if not 1 <= channel <= 3:
+            raise DP800Error(f"Invalid channel {channel}. Must be 1-3 for DP832A.")
+
+        if voltage is None and current is None:
+            raise DP800Error("Must specify at least one of voltage or current")
+
+        try:
+            if voltage is not None:
+                self.instrument.write(f':SOUR{channel}:VOLT {voltage}')
+
+            if current is not None:
+                self.instrument.write(f':SOUR{channel}:CURR {current}')
+
+        except pyvisa.errors.VisaIOError as error_msg:
+            raise DP800Error(
+                f"Failed to set channel {channel} parameters: {error_msg}"
+            ) from error_msg
+
+    def get_channel_parameters(self, channel):
+        """Get current channel parameters using :APPL? command.
+
+        Args:
+            channel (int): Channel number (1-3 for DP832A)
+
+        Returns:
+            str: Channel parameters information from device
+
+        Raises:
+            DP800Error: If device is not connected or query fails
+        """
+        if not self.instrument:
+            raise DP800Error("Device not connected. Call connect() first.")
+
+        if not 1 <= channel <= 3:
+            raise DP800Error(f"Invalid channel {channel}. Must be 1-3 for DP832A.")
+
+        try:
+            response = self.instrument.query(f':APPL? CH{channel}').strip()
+            return response
+        except pyvisa.errors.VisaIOError as error_msg:
+            raise DP800Error(
+                f"Failed to query channel {channel} parameters: {error_msg}"
+            ) from error_msg
