@@ -2,6 +2,7 @@
 """CLI tool for interacting with Rigol DP832A power supply."""
 
 import argparse
+import os
 import sys
 from dp800lib import DP800Controller, DP800Error
 
@@ -118,17 +119,57 @@ def cmd_off(args):
             controller.disconnect()
 
 
+def supports_color():
+    """Check if the terminal supports ANSI color codes."""
+    # Check if stdout is a TTY and TERM is set appropriately
+    if not sys.stdout.isatty():
+        return False
+
+    # Check for NO_COLOR environment variable
+    if os.environ.get('NO_COLOR'):
+        return False
+
+    # Check TERM environment variable
+    term = os.environ.get('TERM', '')
+    return 'color' in term or term in ['xterm', 'xterm-256color', 'screen', 'tmux']
+
+
+def get_channel_color(channel):
+    """Get ANSI color code for a channel."""
+    if not supports_color():
+        return '', ''
+
+    # ANSI color codes
+    colors = {
+        1: '\033[33m',  # Yellow
+        2: '\033[36m',  # Cyan
+        3: '\033[35m',  # Magenta
+    }
+    reset = '\033[0m'   # Reset to default
+
+    return colors.get(channel, ''), reset
+
+
 def print_channel_state(state):
-    """Print formatted channel state information."""
+    """Print formatted channel state information with color coding."""
     channel = state['channel']
-    print(f"Channel {channel}:")
-    print(f"  Output Enabled:  {state['output_enabled']}")
+    color_start, color_end = get_channel_color(channel)
+
+    # Bold ANSI codes for highlighting output enabled status
+    if supports_color():
+        bold_start = '\033[1m'
+        bold_end = '\033[22m'  # Turn off bold, preserve other formatting
+    else:
+        bold_start = bold_end = ''
+
+    print(f"{color_start}Channel {channel}:")
+    print(f"  Output Enabled:  {bold_start}{state['output_enabled']}{bold_end}")
     print(f"  Set Voltage:     {state['set_voltage']:>8.3f} V")
     print(f"  Set Current:     {state['set_current']:>8.3f} A")
     print(f"  OVP Value:       {state['ovp_value']:>8.3f} V")
     print(f"  OVP Enabled:     {state['ovp_enabled']}")
     print(f"  OCP Value:       {state['ocp_value']:>8.3f} A")
-    print(f"  OCP Enabled:     {state['ocp_enabled']}")
+    print(f"  OCP Enabled:     {state['ocp_enabled']}{color_end}")
 
 
 def main():
