@@ -22,3 +22,13 @@ port = 5555
 # Default: true (colors enabled if terminal supports them)
 # Set to false to disable color output regardless of terminal capabilities
 color = true
+
+[tools]
+# Screenshot viewer command to automatically display captured screenshots
+# Use {filename} as placeholder for the filename
+# Leave empty or comment out to disable automatic viewing
+# Uncomment one of the examples below or create your own:
+#screenshotviewer = nomacs {filename}     # Image viewer with many format support
+#screenshotviewer = eog {filename}       # GNOME Eye of GNOME image viewer
+#screenshotviewer = feh {filename}       # Lightweight image viewer
+#screenshotviewer = code {filename}      # Open in VS Code

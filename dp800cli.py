@@ -4,6 +4,7 @@
 import argparse
 import configparser
 import os
+import subprocess
 import sys
 from pathlib import Path
 from dp800lib import DP800Controller, DP800Error
@@ -60,6 +61,20 @@ def cmd_screenshot(args):
 
         filename = controller.take_screenshot(args.output)
         print(f"Screenshot saved to: {filename}")
+
+        # Check if screenshot viewer is configured
+        config_values = load_config()
+        viewer_cmd = config_values.get('screenshotviewer', '').strip()
+
+        if viewer_cmd:
+            # Replace {filename} placeholder with actual filename
+            viewer_cmd_final = viewer_cmd.format(filename=filename)
+            try:
+                # Run the viewer command in background
+                subprocess.Popen(viewer_cmd_final, shell=True)  # pylint: disable=consider-using-with
+                print(f"Opening screenshot with: {viewer_cmd_final}")
+            except (subprocess.SubprocessError, OSError) as error_msg:
+                print(f"Warning: Failed to open screenshot viewer: {error_msg}", file=sys.stderr)
 
     except DP800Error as error_msg:
         print(f"Error: {error_msg}", file=sys.stderr)
@@ -199,7 +214,8 @@ def load_config():
     defaults = {
         'ip': '192.168.0.55',
         'port': '5555',
-        'color': 'true'
+        'color': 'true',
+        'screenshotviewer': ''
     }
 
     # Search order: local directory, then home directory
@@ -228,10 +244,16 @@ def load_config():
     else:
         display_section = {}
 
+    if config.has_section('tools'):
+        tools_section = dict(config['tools'])
+    else:
+        tools_section = {}
+
     return {
         'ip': device_section.get('ip', defaults['ip']),
         'port': int(device_section.get('port', defaults['port'])),
-        'color': display_section.get('color', defaults['color'])
+        'color': display_section.get('color', defaults['color']),
+        'screenshotviewer': tools_section.get('screenshotviewer', defaults['screenshotviewer'])
     }
 
 
