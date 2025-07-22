@@ -29,6 +29,11 @@ make clean
 - Code must achieve 10.00/10 pylint rating
 - Makefile automatically lints all Python files in the project
 
+## Git Workflow
+- When committing changes, always use `git add` on specific files, never `git add .` or `git add --all`
+- Explicitly specify each file to be committed to maintain precise control over what gets added
+- Example: `git add file1.py file2.py` instead of `git add .`
+
 ## Key Configuration
 - **RIGOL_IP**: Must be updated to match your device's actual IP address in `id_device.py:3`
 - **RIGOL_PORT**: Rigol devices use port 5555 for SCPI over LAN
