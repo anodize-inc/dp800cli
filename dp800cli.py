@@ -48,6 +48,24 @@ def cmd_state(args):
             controller.disconnect()
 
 
+def cmd_screenshot(args):
+    """Handle the 'screenshot' subcommand."""
+    try:
+        controller = DP800Controller(args.ip, args.port)
+        controller.connect()
+        controller.validate_device_id(controller.get_device_id())
+
+        filename = controller.take_screenshot(args.output)
+        print(f"Screenshot saved to: {filename}")
+
+    except DP800Error as error_msg:
+        print(f"Error: {error_msg}", file=sys.stderr)
+        sys.exit(1)
+    finally:
+        if 'controller' in locals():
+            controller.disconnect()
+
+
 def print_channel_state(state):
     """Print formatted channel state information."""
     channel = state['channel']
@@ -95,6 +113,16 @@ def main():
         help='Channel number (1-3). If not specified, shows all channels.'
     )
     state_parser.set_defaults(func=cmd_state)
+
+    # Screenshot command
+    screenshot_parser = subparsers.add_parser(
+        'screenshot', help='Take a screenshot of the device display'
+    )
+    screenshot_parser.add_argument(
+        '-o', '--output',
+        help='Output filename (default: auto-generated with timestamp)'
+    )
+    screenshot_parser.set_defaults(func=cmd_screenshot)
 
     # Parse arguments
     args = parser.parse_args()

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Library for SCPI communication with Rigol DP832A power supply."""
 
+from datetime import datetime
+
 import pyvisa
 
 
@@ -169,3 +171,50 @@ class DP800Controller:
             DP800Error: If device is not connected or query fails
         """
         return [self.get_channel_state(channel) for channel in range(1, 4)]
+
+    def take_screenshot(self, filename=None):
+        """Take a screenshot of the device display and save as BMP file.
+
+        Args:
+            filename (str, optional): Output filename. If None, generates timestamp-based name.
+
+        Returns:
+            str: The filename of the saved screenshot
+
+        Raises:
+            DP800Error: If device is not connected or screenshot fails
+        """
+        if not self.instrument:
+            raise DP800Error("Device not connected. Call connect() first.")
+
+        if filename is None:
+            timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            filename = f"screenshot_{self.ip_address}_{timestamp}.bmp"
+
+        try:
+            # Send screenshot command and get binary response
+            self.instrument.write(':SYSTem:PRINT? BMP')
+
+            # Read raw binary data
+            raw_data = self.instrument.read_raw()
+
+            # Parse TMC header to find actual image data
+            # TMC format: '#' + length_of_length + length + data
+            if raw_data[0:1] != b'#':
+                raise DP800Error("Invalid TMC header in screenshot data")
+
+            # Get the length of the length field
+            length_of_header = int(chr(raw_data[1]))
+
+            # Skip TMC header to get to actual BMP data
+            header_size = 2 + length_of_header
+            bmp_data = raw_data[header_size:]
+
+            # Write BMP data to file
+            with open(filename, 'wb') as file:
+                file.write(bmp_data)
+
+            return filename
+
+        except (pyvisa.errors.VisaIOError, IOError, ValueError) as error_msg:
+            raise DP800Error(f"Failed to take screenshot: {error_msg}") from error_msg
