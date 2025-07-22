@@ -65,6 +65,7 @@ Thumbs.db
 *.lint
 .claude/
 *.bmp
+.dp800config
 
 # Logs
 *.log

@@ -1,0 +1,18 @@
+# DP800 CLI Configuration File
+#
+# This is an example configuration file for the dp800cli tool.
+# Copy this file to one of the following locations:
+#   - .dp800config (in the same directory as dp800cli.py)
+#   - ~/.dp800config (in your home directory)
+#
+# Local directory files take precedence over home directory files.
+# Command line arguments always override configuration file settings.
+
+[device]
+# IP address of the DP832A power supply
+# Default: 192.168.0.55
+ip = 192.168.0.55
+
+# Port number for SCPI communication
+# Default: 5555 (standard for Rigol devices)
+port = 5555

@@ -2,8 +2,10 @@
 """CLI tool for interacting with Rigol DP832A power supply."""
 
 import argparse
+import configparser
 import os
 import sys
+from pathlib import Path
 from dp800lib import DP800Controller, DP800Error
 
 
@@ -172,8 +174,48 @@ def print_channel_state(state):
     print(f"  OCP Enabled:     {state['ocp_enabled']}{color_end}")
 
 
+def load_config():
+    """Load configuration from .dp800config files."""
+    config = configparser.ConfigParser()
+
+    # Default values
+    defaults = {
+        'ip': '192.168.0.55',
+        'port': '5555'
+    }
+
+    # Search order: local directory, then home directory
+    config_paths = [
+        Path('.dp800config'),
+        Path.home() / '.dp800config'
+    ]
+
+    for config_path in config_paths:
+        if config_path.exists():
+            try:
+                config.read(config_path)
+                break
+            except configparser.Error:
+                # If config file is malformed, continue to next location
+                continue
+
+    # Get values from config, falling back to defaults
+    if config.has_section('device'):
+        device_section = dict(config['device'])
+    else:
+        device_section = {}
+
+    return {
+        'ip': device_section.get('ip', defaults['ip']),
+        'port': int(device_section.get('port', defaults['port']))
+    }
+
+
 def main():
     """Main CLI entry point."""
+    # Load configuration
+    config_values = load_config()
+
     parser = argparse.ArgumentParser(
         description="CLI tool for interacting with Rigol DP832A power supply"
     )
@@ -181,14 +223,14 @@ def main():
     # Global arguments
     parser.add_argument(
         '--ip',
-        default='192.168.0.55',
-        help='IP address of the DP832A device (default: 192.168.0.55)'
+        default=config_values['ip'],
+        help=f'IP address of the DP832A device (default: {config_values["ip"]})'
     )
     parser.add_argument(
         '--port',
         type=int,
-        default=5555,
-        help='Port number for SCPI communication (default: 5555)'
+        default=config_values['port'],
+        help=f'Port number for SCPI communication (default: {config_values["port"]})'
     )
 
     # Subcommands
