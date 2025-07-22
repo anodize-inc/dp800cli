@@ -44,3 +44,13 @@ make clean
 - Resource format: `TCPIP::{IP}::{PORT}::SOCKET`
 - Standard SCPI commands like `*IDN?` for device identification
 - Proper connection cleanup in finally block
+
+## SCPI Command Validation
+- Always validate new SCPI commands against the programming guide in `docs/full_guide.txt`
+- Use `grep -i -A5 -B5 "command_name" docs/full_guide.txt` to find command syntax
+- Verify parameter formats, channel specifications, and return values before implementation
+
+## PDF Documentation Workflow
+- If given a new PDF for reference, convert it to text using: `pdftotext filename.pdf output.txt`
+- Place converted text in `docs/` directory for easy searching
+- Use text conversion for quick command syntax lookup and validation
