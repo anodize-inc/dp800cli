@@ -70,8 +70,13 @@ def cmd_screenshot(args):
             # Replace {filename} placeholder with actual filename
             viewer_cmd_final = viewer_cmd.format(filename=filename)
             try:
-                # Run the viewer command in background
-                subprocess.Popen(viewer_cmd_final, shell=True)  # pylint: disable=consider-using-with
+                # Run the viewer command in background, redirecting output to /dev/null
+                subprocess.Popen(  # pylint: disable=consider-using-with
+                    viewer_cmd_final,
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
                 print(f"Opening screenshot with: {viewer_cmd_final}")
             except (subprocess.SubprocessError, OSError) as error_msg:
                 print(f"Warning: Failed to open screenshot viewer: {error_msg}", file=sys.stderr)
