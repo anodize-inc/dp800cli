@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Steve deRosier
+
 """CLI tool for interacting with Rigol DP832A power supply."""
 
 import argparse

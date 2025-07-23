@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Steve deRosier
+
 """CLI tool to identify Rigol DP800 series power supplies via SCPI over TCP/IP."""
 import pyvisa
 

@@ -152,3 +152,9 @@ cp example/dp800config ~/.dp800config
 ```
 
 Command-line arguments always override configuration file settings, allowing you to temporarily use different values without modifying the configuration.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2025 Steve deRosier

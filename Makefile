@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Steve deRosier
+
 all: chk_all
 
 PY_FILES = $(shell find . -type f -name '*.py')
