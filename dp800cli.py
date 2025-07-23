@@ -168,6 +168,34 @@ def cmd_set(args):
             controller.disconnect()
 
 
+def cmd_preset(args):
+    """Handle the 'preset' subcommand."""
+    try:
+        controller = DP800Controller(args.ip, args.port)
+        controller.connect()
+        controller.validate_device_id(controller.get_device_id())
+
+        controller.apply_preset(args.value)
+
+        # Map preset values to user-friendly names
+        preset_names = {
+            0: 'DEFAULT',
+            1: 'USER1',
+            2: 'USER2',
+            3: 'USER3',
+            4: 'USER4'
+        }
+
+        print(f"Applied preset {args.value} ({preset_names[args.value]})")
+
+    except DP800Error as error_msg:
+        print(f"Error: {error_msg}", file=sys.stderr)
+        sys.exit(1)
+    finally:
+        if 'controller' in locals():
+            controller.disconnect()
+
+
 def is_color_enabled(config_color_value):
     """Check if color is enabled based on configuration value."""
     if config_color_value is None:
@@ -373,6 +401,16 @@ def main():
         help='Current to set in amps'
     )
     set_parser.set_defaults(func=cmd_set)
+
+    # Preset command
+    preset_parser = subparsers.add_parser('preset', help='Apply a preset configuration')
+    preset_parser.add_argument(
+        'value',
+        type=int,
+        choices=[0, 1, 2, 3, 4],
+        help='Preset value (0=DEFAULT, 1-4=USER1-USER4)'
+    )
+    preset_parser.set_defaults(func=cmd_preset)
 
     # Parse arguments
     args = parser.parse_args()

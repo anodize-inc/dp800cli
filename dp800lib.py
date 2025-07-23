@@ -412,3 +412,44 @@ class DP800Controller:
             raise DP800Error(
                 f"Failed to query channel {channel} parameters: {error_msg}"
             ) from error_msg
+
+    def apply_preset(self, preset_value):
+        """Apply a preset configuration to the device.
+
+        Args:
+            preset_value (int): Preset number (0=DEFAULT, 1-4=USER1-USER4)
+
+        Raises:
+            DP800Error: If device is not connected or command fails
+        """
+        if not self.instrument:
+            raise DP800Error("Device not connected. Call connect() first.")
+
+        if not 0 <= preset_value <= 4:
+            raise DP800Error(f"Invalid preset value {preset_value}. Must be 0-4.")
+
+        # Map preset values to command strings
+        preset_map = {
+            0: 'DEFAULT',
+            1: 'USER1',
+            2: 'USER2',
+            3: 'USER3',
+            4: 'USER4'
+        }
+
+        preset_name = preset_map[preset_value]
+
+        try:
+            # Step 1: Set the preset key
+            self.instrument.write(f':PRES:KEY {preset_name}')
+
+            # Step 2: Allow time for command processing
+            time.sleep(0.1)  # 100 milliseconds
+
+            # Step 3: Apply the preset
+            self.instrument.write(':PRES')
+
+        except pyvisa.errors.VisaIOError as error_msg:
+            raise DP800Error(
+                f"Failed to apply preset {preset_value} ({preset_name}): {error_msg}"
+            ) from error_msg
