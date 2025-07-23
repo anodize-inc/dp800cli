@@ -69,14 +69,23 @@ def cmd_screenshot(args):
         if viewer_cmd:
             # Replace {filename} placeholder with actual filename
             viewer_cmd_final = viewer_cmd.format(filename=filename)
+
+            # Check if debug mode is enabled for screenshot viewer
+            screenshot_debug = is_color_enabled(config_values.get('screenshotdebug', 'false'))
+
             try:
-                # Run the viewer command in background, redirecting output to /dev/null
-                subprocess.Popen(  # pylint: disable=consider-using-with
-                    viewer_cmd_final,
-                    shell=True,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
+                # Run the viewer command in background
+                if screenshot_debug:
+                    # Debug mode: show viewer output
+                    subprocess.Popen(viewer_cmd_final, shell=True)  # pylint: disable=consider-using-with
+                else:
+                    # Normal mode: suppress viewer output
+                    subprocess.Popen(  # pylint: disable=consider-using-with
+                        viewer_cmd_final,
+                        shell=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
                 print(f"Opening screenshot with: {viewer_cmd_final}")
             except (subprocess.SubprocessError, OSError) as error_msg:
                 print(f"Warning: Failed to open screenshot viewer: {error_msg}", file=sys.stderr)
@@ -280,7 +289,8 @@ def load_config():
         'ip': '192.168.0.55',
         'port': '5555',
         'color': 'true',
-        'screenshotviewer': ''
+        'screenshotviewer': '',
+        'screenshotdebug': 'false'
     }
 
     # Search order: local directory, then home directory
@@ -318,7 +328,8 @@ def load_config():
         'ip': device_section.get('ip', defaults['ip']),
         'port': int(device_section.get('port', defaults['port'])),
         'color': display_section.get('color', defaults['color']),
-        'screenshotviewer': tools_section.get('screenshotviewer', defaults['screenshotviewer'])
+        'screenshotviewer': tools_section.get('screenshotviewer', defaults['screenshotviewer']),
+        'screenshotdebug': tools_section.get('screenshotdebug', defaults['screenshotdebug'])
     }
 
 

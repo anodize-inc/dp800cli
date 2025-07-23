@@ -32,3 +32,9 @@ color = true
 #screenshotviewer = eog {filename}       # GNOME Eye of GNOME image viewer
 #screenshotviewer = feh {filename}       # Lightweight image viewer
 #screenshotviewer = code {filename}      # Open in VS Code
+
+# Enable debug mode for screenshot viewer (true/false, 1/0, on/off)
+# When enabled, shows viewer application output on console
+# When disabled (default), suppresses viewer output
+# Default: false
+#screenshotdebug = true
