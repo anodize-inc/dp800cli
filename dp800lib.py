@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Library for SCPI communication with Rigol DP832A power supply."""
 
+import time
 from datetime import datetime
 
 import pyvisa
@@ -16,6 +17,13 @@ class DP800Controller:
     # Valid device identifiers for DP832A
     VALID_DEVICE_MODELS = {'DP832A'}
     VALID_MANUFACTURER = 'RIGOL TECHNOLOGIES'
+
+    # DP832A channel specifications from Table 2-1
+    CHANNEL_SPECS = {
+        1: {'voltage_min': 0.0, 'voltage_max': 32.0, 'current_min': 0.0, 'current_max': 3.2},
+        2: {'voltage_min': 0.0, 'voltage_max': 32.0, 'current_min': 0.0, 'current_max': 3.2},
+        3: {'voltage_min': 0.0, 'voltage_max': 5.3, 'current_min': 0.0, 'current_max': 3.2}
+    }
 
     def __init__(self, ip_address='192.168.0.55', port=5555):
         """Initialize the controller with device connection parameters.
@@ -284,6 +292,60 @@ class DP800Controller:
                 f"Failed to query channel {channel} output state: {error_msg}"
             ) from error_msg
 
+    def _validate_channel_parameters(self, channel, voltage, current):
+        """Validate channel parameters against specifications.
+
+        Args:
+            channel (int): Channel number (1-3 for DP832A)
+            voltage (float, optional): Voltage to validate
+            current (float, optional): Current to validate
+
+        Raises:
+            DP800Error: If parameters are out of range
+        """
+        specs = self.CHANNEL_SPECS[channel]
+
+        if voltage is not None:
+            if not specs['voltage_min'] <= voltage <= specs['voltage_max']:
+                raise DP800Error(
+                    f"Voltage {voltage}V out of range for channel {channel}. "
+                    f"Valid range: {specs['voltage_min']}V to {specs['voltage_max']}V"
+                )
+
+        if current is not None:
+            if not specs['current_min'] <= current <= specs['current_max']:
+                raise DP800Error(
+                    f"Current {current}A out of range for channel {channel}. "
+                    f"Valid range: {specs['current_min']}A to {specs['current_max']}A"
+                )
+
+    def _verify_channel_settings(self, channel, voltage, current):
+        """Verify that channel settings were applied correctly.
+
+        Args:
+            channel (int): Channel number (1-3 for DP832A)
+            voltage (float, optional): Expected voltage value
+            current (float, optional): Expected current value
+
+        Raises:
+            DP800Error: If verification fails
+        """
+        if voltage is not None:
+            actual_voltage = float(self.instrument.query(f':SOUR{channel}:VOLT?').strip())
+            if abs(actual_voltage - voltage) > 0.001:  # Allow small floating point differences
+                raise DP800Error(
+                    f"Verification failed: Set voltage {voltage}V "
+                    f"but device reports {actual_voltage}V"
+                )
+
+        if current is not None:
+            actual_current = float(self.instrument.query(f':SOUR{channel}:CURR?').strip())
+            if abs(actual_current - current) > 0.0001:  # Allow small floating point differences
+                raise DP800Error(
+                    f"Verification failed: Set current {current}A "
+                    f"but device reports {actual_current}A"
+                )
+
     def set_channel_parameters(self, channel, voltage=None, current=None):
         """Set channel voltage and/or current using :SOURce commands.
 
@@ -304,12 +366,21 @@ class DP800Controller:
         if voltage is None and current is None:
             raise DP800Error("Must specify at least one of voltage or current")
 
+        # Validate parameters against channel specifications
+        self._validate_channel_parameters(channel, voltage, current)
+
         try:
             if voltage is not None:
                 self.instrument.write(f':SOUR{channel}:VOLT {voltage}')
 
             if current is not None:
                 self.instrument.write(f':SOUR{channel}:CURR {current}')
+
+            # Allow time for device to process the settings
+            time.sleep(0.5)  # 500 milliseconds
+
+            # Verify the settings were applied correctly
+            self._verify_channel_settings(channel, voltage, current)
 
         except pyvisa.errors.VisaIOError as error_msg:
             raise DP800Error(
